@@ -1,6 +1,12 @@
-lecturer_id,name,subjects,available_types
-L1,Dr. Smith,"Mathematics,Physics",Lecture
-L2,Dr. Brown,"Chemistry,Biology",Lecture
-L3,Dr. Johnson,"Computer Science,Physics",Lecture
-L4,Dr. Garcia,"Biology,Mathematics",Lecture
-L5,Dr. Martinez,"Chemistry,Computer Science",Lecture
+lecturer_id,name,subject,available_type
+L1,Dr. Smith,Mathematics,Lecture
+L1,Dr. Smith,Mathematics,Practice
+L2,Dr. Brown,Chemistry,Lecture
+L2,Dr. Brown,Biology,Practice
+L3,Dr. Johnson,Computer Science,Lecture
+L3,Dr. Johnson,Computer Science,Practice
+L4,Dr. Garcia,Biology,Practice
+L5,Dr. Martinez,Chemistry,Lecture
+L5,Dr. Martinez,Computer Science,Practice
+L6,Dr. Williams,Physics,Lecture
+L6,Dr. Williams,Physics,Practice

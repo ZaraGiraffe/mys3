@@ -13,10 +13,9 @@ TIME_SLOTS: List[Tuple[int, int]] = [(day, period) for day in range(5) for perio
 DAYS_OF_WEEK = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
 def load_data() -> Tuple[List[Group], List[Subject], List[Lecturer], List[Room]]:
-    # ... (Same as before)
-    # Load data from CSV files as previously implemented
     groups: List[Group] = []
     subjects: Dict[str, Subject] = {}
+    lecturers_dict: Dict[str, Lecturer] = {}
     lecturers: List[Lecturer] = []
     rooms: List[Room] = []
 
@@ -26,7 +25,8 @@ def load_data() -> Tuple[List[Group], List[Subject], List[Lecturer], List[Room]]
         for row in reader:
             subject = Subject(
                 name=row["name"],
-                total_hours=int(row["total_hours"]),
+                lecture_hours=int(row["lecture_hours"]),
+                practice_hours=int(row["practice_hours"])
             )
             subjects[subject.name] = subject
 
@@ -46,14 +46,23 @@ def load_data() -> Tuple[List[Group], List[Subject], List[Lecturer], List[Room]]
     with open("data/lecturers.csv", mode="r") as file:
         reader = csv.DictReader(file)
         for row in reader:
-            subjects_list = [s.strip() for s in row["subjects"].split(",")]
-            available_types = [t.strip() for t in row["available_types"].split(",")]
-            lecturer = Lecturer(
-                name=row["name"],
-                subjects=subjects_list,
-                available_types=available_types
-            )
-            lecturers.append(lecturer)
+            lecturer_id = row["lecturer_id"]
+            name = row["name"]
+            subject_name = row["subject"].strip()
+            available_type = row["available_type"].strip()  # Lecture or Practice
+
+            if lecturer_id not in lecturers_dict:
+                lecturer = Lecturer(lecturer_id=lecturer_id, name=name)
+                lecturers_dict[lecturer_id] = lecturer
+            else:
+                lecturer = lecturers_dict[lecturer_id]
+
+            # Add subject and available_type
+            if subject_name not in lecturer.subjects:
+                lecturer.subjects[subject_name] = []
+            lecturer.subjects[subject_name].append(available_type)
+
+    lecturers = list(lecturers_dict.values())
 
     # Load rooms
     with open("data/rooms.csv", mode="r") as file:
@@ -68,13 +77,12 @@ def load_data() -> Tuple[List[Group], List[Subject], List[Lecturer], List[Room]]
     return groups, list(subjects.values()), lecturers, rooms
 
 def check_constraints(timetable: Timetable, groups: List[Group]) -> int:
-    # ... (Same as before)
     violations = 0
     lecturer_schedule: Dict[Tuple[str, Tuple[int, int]], bool] = {}
     room_schedule: Dict[Tuple[str, Tuple[int, int]], bool] = {}
     group_schedule: Dict[Tuple[str, Tuple[int, int]], bool] = {}
 
-    for (group_id, slot), (subject, lecturer, room) in timetable.schedule.items():
+    for (group_id, slot), (subject, lecturer, room, session_type) in timetable.schedule.items():
         # Check group schedule
         if group_schedule.get((group_id, slot)):
             violations += 1  # Group is scheduled for more than one class at the same time
@@ -98,18 +106,13 @@ def check_constraints(timetable: Timetable, groups: List[Group]) -> int:
 def schedule_to_csv(timetable: Timetable, filename: str = "schedule.csv") -> None:
     with open(filename, mode="w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["Group ID", "Day", "Period", "Subject", "Lecturer", "Room ID"])
+        writer.writerow(["Group ID", "Day", "Period", "Subject", "Lecturer", "Room ID", "Session Type"])
 
-        for (group_id, (day, period)), (subject, lecturer, room) in timetable.schedule.items():
-            writer.writerow([group_id, day, period, subject.name, lecturer.name, room.room_id])
+        for (group_id, (day, period)), (subject, lecturer, room, session_type) in timetable.schedule.items():
+            writer.writerow([group_id, day, period, subject.name, lecturer.name, room.room_id, session_type])
     print(f"Schedule saved to {filename}")
 
 def save_schedule_to_excel(timetable: Timetable, output_folder: str = "schedules") -> None:
-    """
-    Saves the timetable to Excel files, one for each group.
-    Each Excel file contains a table with 5 columns (days) and 4 rows (periods).
-    At each cell, it writes: subject : lecturer : room
-    """
     import os
     from openpyxl import Workbook
 
@@ -135,14 +138,14 @@ def save_schedule_to_excel(timetable: Timetable, output_folder: str = "schedules
             ws[f"A{row_num}"] = f"Period {row_num - 1}"
 
         # Fill in the schedule
-        for (gid, (day, period)), (subject, lecturer, room) in timetable.schedule.items():
+        for (gid, (day, period)), (subject, lecturer, room, session_type) in timetable.schedule.items():
             if gid == group_id:
                 # Excel rows and columns are 1-indexed
                 col_num = day + 2  # Offset by 2 because column 1 is for periods, and days start from 0
                 row_num = period + 2  # Offset by 2 because row 1 is for headers, and periods start from 0
                 col_letter = get_column_letter(col_num)
                 cell = f"{col_letter}{row_num}"
-                ws[cell] = f"{subject.name} : {lecturer.name} : {room.room_id}"
+                ws[cell] = f"{subject.name} : {lecturer.name} : {room.room_id} :: {session_type}"
 
         # Save the workbook
         filename = os.path.join(output_folder, f"group_{group_id}.xlsx")

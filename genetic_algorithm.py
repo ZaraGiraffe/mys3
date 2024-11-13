@@ -38,7 +38,7 @@ class GeneticAlgorithm:
     def generate_valid_schedule(self) -> Timetable:
         """
         Generates a timetable that satisfies the hard constraints.
-        Assigns classes to time slots randomly, ensuring only hard constraints are enforced.
+        Assigns lectures and practices separately, ensuring lecturer qualifications.
         """
         timetable = Timetable()
         lecturer_schedule = {}
@@ -48,46 +48,56 @@ class GeneticAlgorithm:
         for group in self.groups:
             for subject_name in group.subjects:
                 subject = self.subjects_dict[subject_name]
-                total_possible_sessions = int(subject.total_hours / 5)  # Updated divisor
-                sessions_to_assign = random.randint(1, total_possible_sessions)
+                for session_type in ['Lecture', 'Practice']:
+                    if session_type == 'Lecture' and subject.lecture_hours > 0:
+                        total_possible_sessions = int(subject.lecture_hours / 5)
+                    elif session_type == 'Practice' and subject.practice_hours > 0:
+                        total_possible_sessions = int(subject.practice_hours / 5)
+                    else:
+                        continue  # No hours required for this session type
 
-                for _ in range(sessions_to_assign):
-                    random.shuffle(TIME_SLOTS)
-                    for slot in TIME_SLOTS:
-                        key = (group.group_id, slot)
-                        if group_schedule.get((group.group_id, slot)):
-                            continue
+                    sessions_to_assign = random.randint(1, total_possible_sessions)
 
-                        suitable_lecturers = [
-                            lect for lect in self.lecturers
-                            if subject.name in lect.subjects
-                        ]
-                        random.shuffle(suitable_lecturers)
-                        lecturer_found = False
-                        for lecturer in suitable_lecturers:
-                            if lecturer_schedule.get((lecturer.name, slot)):
+                    for _ in range(sessions_to_assign):
+                        random.shuffle(TIME_SLOTS)
+                        for slot in TIME_SLOTS:
+                            key = (group.group_id, slot)
+                            if group_schedule.get((group.group_id, slot)):
                                 continue
 
-                            suitable_rooms = [
-                                room for room in self.rooms if room.capacity >= group.size
-                            ]
-                            random.shuffle(suitable_rooms)
-                            room_found = False
-                            for room in suitable_rooms:
-                                if room_schedule.get((room.room_id, slot)):
+                            # Select suitable lecturers
+                            suitable_lecturers = []
+                            for lecturer in self.lecturers:
+                                if subject.name in lecturer.subjects and session_type in lecturer.subjects[subject.name]:
+                                    suitable_lecturers.append(lecturer)
+                            random.shuffle(suitable_lecturers)
+
+                            lecturer_found = False
+                            for lecturer in suitable_lecturers:
+                                if lecturer_schedule.get((lecturer.name, slot)):
                                     continue
 
-                                timetable.schedule[key] = (subject, lecturer, room)
-                                group_schedule[(group.group_id, slot)] = True
-                                lecturer_schedule[(lecturer.name, slot)] = True
-                                room_schedule[(room.room_id, slot)] = True
-                                room_found = True
+                                suitable_rooms = [
+                                    room for room in self.rooms if room.capacity >= group.size
+                                ]
+                                random.shuffle(suitable_rooms)
+                                room_found = False
+                                for room in suitable_rooms:
+                                    if room_schedule.get((room.room_id, slot)):
+                                        continue
+
+                                    # Assign the session
+                                    timetable.schedule[key] = (subject, lecturer, room, session_type)
+                                    group_schedule[(group.group_id, slot)] = True
+                                    lecturer_schedule[(lecturer.name, slot)] = True
+                                    room_schedule[(room.room_id, slot)] = True
+                                    room_found = True
+                                    break
+                                if room_found:
+                                    lecturer_found = True
+                                    break
+                            if lecturer_found:
                                 break
-                            if room_found:
-                                lecturer_found = True
-                                break
-                        if lecturer_found:
-                            break
         return timetable
 
     def calculate_fitness(self):
@@ -99,20 +109,28 @@ class GeneticAlgorithm:
     def calculate_individual_fitness(self, timetable: Timetable) -> float:
         soft_violations = 0
 
-        # Penalty for not covering required hours
+        # Penalty for not covering required lecture and practice hours
         for group in self.groups:
-            subject_sessions = {subject_name: 0 for subject_name in group.subjects}
-            for (group_id, _), (subject, _, _) in timetable.schedule.items():
+            subject_sessions = {
+                (subject_name, session_type): 0
+                for subject_name in group.subjects
+                for session_type in ['Lecture', 'Practice']
+            }
+            for (group_id, _), (subject, _, _, session_type) in timetable.schedule.items():
                 if group_id == group.group_id:
-                    subject_sessions[subject.name] += 1
+                    subject_sessions[(subject.name, session_type)] += 1
 
             for subject_name in group.subjects:
                 subject = self.subjects_dict[subject_name]
-                total_required_sessions = int(subject.total_hours / 5)  # Updated divisor
-                sessions_assigned = subject_sessions[subject_name]
-                difference = abs(sessions_assigned - total_required_sessions)
-                if difference > 0:
-                    soft_violations += difference * 10  # Increased penalty
+                for session_type in ['Lecture', 'Practice']:
+                    if session_type == 'Lecture':
+                        total_required_sessions = int(subject.lecture_hours / 5)
+                    else:
+                        total_required_sessions = int(subject.practice_hours / 5)
+                    sessions_assigned = subject_sessions[(subject_name, session_type)]
+                    difference = abs(sessions_assigned - total_required_sessions)
+                    if difference > 0:
+                        soft_violations += 10 * difference**4  # Increased penalty
 
         # Penalty for windows (gaps) in group schedules
         for group in self.groups:
@@ -120,16 +138,16 @@ class GeneticAlgorithm:
                 slot for (group_id, slot) in timetable.schedule.keys()
                 if group_id == group.group_id
             ]
-            soft_violations += self.count_windows(slots) * 2  # Penalty per window
+            soft_violations += 10 * self.count_windows(slots)**4  # Penalty per window
 
         # Penalty for windows in lecturer schedules
-        lecturers = set(lecturer.name for _, lecturer, _ in timetable.schedule.values())
+        lecturers = set(lecturer.name for _, lecturer, _, _ in timetable.schedule.values())
         for lecturer_name in lecturers:
             slots = [
-                slot for ((_, slot), (_, lecturer, _)) in timetable.schedule.items()
+                slot for ((_, slot), (_, lecturer, _, _)) in timetable.schedule.items()
                 if lecturer.name == lecturer_name
             ]
-            soft_violations += self.count_windows(slots) * 2  # Penalty per window
+            soft_violations += 2 * self.count_windows(slots)**2  # Penalty per window
 
         # Fitness score
         fitness = 1000 - soft_violations
@@ -239,6 +257,7 @@ class GeneticAlgorithm:
         - Schedule 0: base schedule (unchanged)
         - Schedule 1: base schedule with one lesson popped
         - Schedule 2: base schedule with one random lesson inserted (if valid)
+        - Schedule 3: base schedule with a lesson popped from one group and a lesson added for another group (if valid)
         Returns a list of valid schedules.
         """
         new_schedules = []
@@ -265,12 +284,21 @@ class GeneticAlgorithm:
         # Select a random subject from the group's subjects
         new_subject_name = random.choice(group.subjects)
         new_subject = self.subjects_dict[new_subject_name]
+        # Select possible session types based on remaining hours
+        possible_session_types = []
+        if new_subject.lecture_hours > 0:
+            possible_session_types.append('Lecture')
+        if new_subject.practice_hours > 0:
+            possible_session_types.append('Practice')
+        if not possible_session_types:
+            return new_schedules  # Cannot assign any sessions for this subject
+        session_type = random.choice(possible_session_types)
         # Select a random time slot
         new_slot = random.choice(TIME_SLOTS)
-        # Select a random lecturer who can teach the subject
+        # Select a random lecturer who can teach the subject and session type
         suitable_lecturers = [
             lect for lect in self.lecturers
-            if new_subject.name in lect.subjects
+            if new_subject.name in lect.subjects and session_type in lect.subjects[new_subject.name]
         ]
         if suitable_lecturers:
             new_lecturer = random.choice(suitable_lecturers)
@@ -280,9 +308,55 @@ class GeneticAlgorithm:
                 new_room = random.choice(suitable_rooms)
                 # Check for conflicts
                 if self.is_assignment_valid(timetable_inserted, group.group_id, new_slot, new_lecturer, new_room):
-                    timetable_inserted.schedule[(group.group_id, new_slot)] = (new_subject, new_lecturer, new_room)
+                    timetable_inserted.schedule[(group.group_id, new_slot)] = (new_subject, new_lecturer, new_room, session_type)
                     if self.validate_schedule(timetable_inserted):
                         new_schedules.append(timetable_inserted)
+
+        # Schedule 3: base schedule with one lesson popped from one group and a lesson added for another group
+        timetable_swap = Timetable()
+        timetable_swap.schedule = timetable.schedule.copy()
+        # Check if there are lessons to pop
+        if timetable_swap.schedule:
+            # Select a random group with lessons
+            group_ids_with_lessons = set(group_id for (group_id, _) in timetable_swap.schedule.keys())
+            group_id_to_pop = random.choice(list(group_ids_with_lessons))
+            group_lessons = [key for key in timetable_swap.schedule.keys() if key[0] == group_id_to_pop]
+            key_to_remove = random.choice(group_lessons)
+            timetable_swap.schedule.pop(key_to_remove)
+
+            # Now select another group to add a lesson to
+            other_groups = [group for group in self.groups if group.group_id != group_id_to_pop]
+            if other_groups:
+                group_to_add = random.choice(other_groups)
+                # Select a random subject from the group's subjects
+                new_subject_name = random.choice(group_to_add.subjects)
+                new_subject = self.subjects_dict[new_subject_name]
+                # Select possible session types based on remaining hours
+                possible_session_types = []
+                if new_subject.lecture_hours > 0:
+                    possible_session_types.append('Lecture')
+                if new_subject.practice_hours > 0:
+                    possible_session_types.append('Practice')
+                if possible_session_types:
+                    session_type = random.choice(possible_session_types)
+                    # Select a random time slot
+                    new_slot = random.choice(TIME_SLOTS)
+                    # Select a random lecturer who can teach the subject and session type
+                    suitable_lecturers = [
+                        lect for lect in self.lecturers
+                        if new_subject.name in lect.subjects and session_type in lect.subjects[new_subject.name]
+                    ]
+                    if suitable_lecturers:
+                        new_lecturer = random.choice(suitable_lecturers)
+                        # Select a random room that can accommodate the group
+                        suitable_rooms = [room for room in self.rooms if room.capacity >= group_to_add.size]
+                        if suitable_rooms:
+                            new_room = random.choice(suitable_rooms)
+                            # Check for conflicts
+                            if self.is_assignment_valid(timetable_swap, group_to_add.group_id, new_slot, new_lecturer, new_room):
+                                timetable_swap.schedule[(group_to_add.group_id, new_slot)] = (new_subject, new_lecturer, new_room, session_type)
+                                if self.validate_schedule(timetable_swap):
+                                    new_schedules.append(timetable_swap)
         # Return the list of valid new schedules
         return new_schedules
 
@@ -296,7 +370,7 @@ class GeneticAlgorithm:
             return False
 
         # Check if the lecturer or room is occupied at this slot
-        for (other_group_id, other_slot), (_, other_lecturer, other_room) in timetable.schedule.items():
+        for (other_group_id, other_slot), (_, other_lecturer, other_room, _) in timetable.schedule.items():
             if other_slot == slot:
                 if other_lecturer.name == lecturer.name or other_room.room_id == room.room_id:
                     return False

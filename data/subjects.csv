@@ -1,6 +1,6 @@
-subject_id,name,total_hours,requires_subgroup
-S1,Mathematics,60,No
-S2,Physics,45,No
-S3,Chemistry,50,No
-S4,Computer Science,70,No
-S5,Biology,40,No
+subject_id,name,lecture_hours,practice_hours
+S1,Mathematics,30,30
+S2,Physics,20,25
+S3,Chemistry,25,25
+S4,Computer Science,35,35
+S5,Biology,20,20

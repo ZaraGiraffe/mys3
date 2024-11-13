@@ -10,8 +10,8 @@ def main() -> None:
 
     # Parameters for the genetic algorithm
     population_size = 50
-    generations = 500
-    mutation_rate = 0.1
+    generations = 1000
+    mutation_rate = 0.4
     crossover_pairs = 10
 
     # Create an instance of the genetic algorithm
