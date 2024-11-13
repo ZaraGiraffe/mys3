@@ -1,12 +1,28 @@
 lecturer_id,name,subject,available_type
-L1,Dr. Smith,Mathematics,Lecture
-L1,Dr. Smith,Mathematics,Practice
-L2,Dr. Brown,Chemistry,Lecture
-L2,Dr. Brown,Biology,Practice
-L3,Dr. Johnson,Computer Science,Lecture
-L3,Dr. Johnson,Computer Science,Practice
-L4,Dr. Garcia,Biology,Practice
-L5,Dr. Martinez,Chemistry,Lecture
-L5,Dr. Martinez,Computer Science,Practice
-L6,Dr. Williams,Physics,Lecture
-L6,Dr. Williams,Physics,Practice
+L1,Пашко,Статистичне моделювання в задачах штучного інтелекту,Lecture
+L2,Вергунова,Складність алгоритмів,Lecture
+L3,Бобиль,Нейронні мережі,Lecture
+L3,Бобиль,Нейронні мережі,Practice
+L4,Закала,Нейронні мережі,Practice
+L5,Зінько,Теорія прийняття рішень,Practice
+L6,Мащенко,Теорія прийняття рішень,Lecture
+L7,Тарануха,Інтелектуальні системи,Lecture
+L7,Тарануха,Інтелектуальні системи,Practice
+L7,Тарануха,Основи комп'ютерної лінгвістики,Lecture
+L7,Тарануха,Основи комп'ютерної лінгвістики,Practice
+L8,Федорус,Інтелектуальні системи,Practice
+L9,Мисечко,Інтелектуальні системи,Practice
+L9,Мисечко,Інформаційні системи,Practice
+L10,Ткаченко,Інформаційні технології,Lecture
+L10,Ткаченко,Розробка ПЗ під мобільні платформи,Lecture
+L11,Терещенко,Інформаційні технології,Practice
+L12,Свистунов,Інформаційні технології,Practice
+L13,Красовська,Іноземна мова,Practice
+L14,Шишацька,Основи управління ІТ-проєктами,Lecture
+L15,Дорошенко,Методи паралельних обчислень,Lecture
+L16,Крак,Розробка ПЗ,Lecture
+L16,Крак,Проблеми штучного інтелекту,Lecture
+L17,Криволап,Розробка ПЗ під мобільні платформи,Practice
+L18,Галавай,Розробка ПЗ під мобільні платформи,Practice
+L19,Башук,Інформаційні системи,Practice
+L20,Башняков,Теорія прийняття рішень,Practice

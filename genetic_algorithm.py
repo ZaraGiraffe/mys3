@@ -124,13 +124,13 @@ class GeneticAlgorithm:
                 subject = self.subjects_dict[subject_name]
                 for session_type in ['Lecture', 'Practice']:
                     if session_type == 'Lecture':
-                        total_required_sessions = int(subject.lecture_hours / 5)
+                        total_required_sessions = int(subject.lecture_hours / 30)
                     else:
-                        total_required_sessions = int(subject.practice_hours / 5)
+                        total_required_sessions = int(subject.practice_hours / 30)
                     sessions_assigned = subject_sessions[(subject_name, session_type)]
                     difference = abs(sessions_assigned - total_required_sessions)
                     if difference > 0:
-                        soft_violations += 10 * difference**4  # Increased penalty
+                        soft_violations += (10 * difference)**2  # Increased penalty
 
         # Penalty for windows (gaps) in group schedules
         for group in self.groups:
