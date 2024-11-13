@@ -1,5 +1,3 @@
-# models.py
-
 from typing import List, Dict, Tuple
 
 class Group:
@@ -24,7 +22,7 @@ class Lecturer:
     def __init__(self, lecturer_id: str, name: str):
         self.lecturer_id: str = lecturer_id
         self.name: str = name
-        self.subjects: Dict[str, List[str]] = {}  # subject_name -> list of available_types (Lecture, Practice)
+        self.subjects: Dict[str, List[str]] = {} 
 
     def __repr__(self) -> str:
         return f"Lecturer(id={self.lecturer_id}, name={self.name}, subjects={self.subjects})"
@@ -39,8 +37,6 @@ class Room:
 
 class Timetable:
     def __init__(self):
-        # Key: (group_id, (day, period))
-        # Value: (Subject, Lecturer, Room, Session Type)
         self.schedule: Dict[Tuple[str, Tuple[int, int]], Tuple[Subject, Lecturer, Room, str]] = {}
 
     def __repr__(self) -> str:
