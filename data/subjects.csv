@@ -1,0 +1,6 @@
+subject_id,name,total_hours,requires_subgroup
+S1,Mathematics,60,No
+S2,Physics,45,No
+S3,Chemistry,50,No
+S4,Computer Science,70,No
+S5,Biology,40,No

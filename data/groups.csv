@@ -1,0 +1,6 @@
+group_id,size,subjects
+G1,30,"Mathematics,Physics"
+G2,25,"Chemistry,Biology"
+G3,20,"Mathematics,Computer Science"
+G4,35,"Physics,Chemistry"
+G5,40,"Biology,Computer Science"

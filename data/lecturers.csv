@@ -1,0 +1,6 @@
+lecturer_id,name,subjects,available_types
+L1,Dr. Smith,"Mathematics,Physics",Lecture
+L2,Dr. Brown,"Chemistry,Biology",Lecture
+L3,Dr. Johnson,"Computer Science,Physics",Lecture
+L4,Dr. Garcia,"Biology,Mathematics",Lecture
+L5,Dr. Martinez,"Chemistry,Computer Science",Lecture
